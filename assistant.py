@@ -32,8 +32,8 @@ class Assistant:
                 self.description = description
                 self.history = []
 
-            def add_history(self, score, duration, description):
-                self.history.append((score, duration, description))
+            def add_history(self, score, duration, ts, description):
+                self.history.append((score, duration, ts, description))
 
         def __init__(self, areas=None):
             self.areas = areas
@@ -86,14 +86,16 @@ def test_add_history():
     area = Assistant.User.AreaOfBalance.Adventures
     score = 3
     duration = 25
+    ts = 1
     description = 'some description'
 
     assistant.add_user(user).add_task(task_name, area).add_history(
-        score, duration, description
+        score, duration, ts, description
     )
     assert assistant.users[user].tasks[task_name].history[0] == (
         score,
         duration,
+        ts,
         description,
     )
 
