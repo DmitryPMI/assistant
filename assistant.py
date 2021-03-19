@@ -1,5 +1,6 @@
 # pylint: disable=C0111,R0903
 from enum import Enum
+import json
 
 
 class Assistant:
@@ -51,6 +52,24 @@ class Assistant:
             raise ValueError('already exists')
         self.users[user] = self.User(areas)
         return self.users[user]
+
+    def load_from_json(self, filename):
+        with open(filename, 'r') as file:
+            data = json.load(file)
+        users = data.keys()
+        for user_id in users:
+            user = self.User()
+            for task_id, task_json in data[user_id]['tasks'].items():
+                task = user.Task(6, task_json['description'])
+                for tomato_id, tomato_json in data[user_id]['tomatoes'].items():
+                    if tomato_json['task_id'] == task_id:
+                        task.add_history(tomato_json['status'], tomato_json['time_tomato'], tomato_json['ts'], tomato_json['answer'])
+                user.tasks[task_json['name']] = task
+            self.users[user_id] = user
+
+    def save_to_json(self, filename):
+        with open(filename, 'w') as file:
+            json.dump(self.users, file)
 
 
 def test_create_user():
