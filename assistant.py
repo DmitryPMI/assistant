@@ -1,5 +1,6 @@
 # pylint: disable=C0111,R0903
 from enum import Enum
+import json
 
 
 class Assistant:
@@ -32,8 +33,8 @@ class Assistant:
                 self.description = description
                 self.history = []
 
-            def add_history(self, score, duration, description):
-                self.history.append((score, duration, description))
+            def add_history(self, score, duration, ts, description):
+                self.history.append((score, duration, ts, description))
 
         def __init__(self, areas=None):
             self.areas = areas
@@ -52,52 +53,25 @@ class Assistant:
         self.users[user] = self.User(areas)
         return self.users[user]
 
+    def load_from_json(self, filename):
+        with open(filename, 'r') as file:
+            data = json.load(file)
+        users = data.keys()
+        for user_id in users:
+            user = self.User()
+            for task_id, task_json in data[user_id]['tasks'].items():
+                task = user.Task(6, task_json['description'])
+                for tomato_id, tomato_json in data[user_id]['tomatoes'].items():
+                    if tomato_json['task_id'] == task_id:
+                        task.add_history(tomato_json['status'], tomato_json['time_tomato'], tomato_json['ts'], tomato_json['answer'])
+                user.tasks[task_json['name']] = task
+            self.users[user_id] = user
 
-def test_create_user():
-    assistant = Assistant()
-    for score in range(Assistant.MaxScore):
-        areas = {
-            Assistant.User.AreaOfBalance(i): score
-            for i in range(len(Assistant.User.AreaOfBalance))
-        }
-        user = f'user{score}'
-        assistant.add_user(user, areas)
-        assert (
-            assistant.users[user].areas[Assistant.User.AreaOfBalance.Adventures]
-            == score
-        )
-
-
-def test_add_task():
-    assistant = Assistant()
-    user = 'user with task'
-    task_name = 'first task'
-    area = Assistant.User.AreaOfBalance.Adventures
-    description = 'some description'
-    assistant.add_user(user).add_task(task_name, area, description)
-    assert assistant.users[user].tasks[task_name].area == area
-    assert assistant.users[user].tasks[task_name].description == description
-
-
-def test_add_history():
-    assistant = Assistant()
-    user = 'user with history'
-    task_name = 'first task'
-    area = Assistant.User.AreaOfBalance.Adventures
-    score = 3
-    duration = 25
-    description = 'some description'
-
-    assistant.add_user(user).add_task(task_name, area).add_history(
-        score, duration, description
-    )
-    assert assistant.users[user].tasks[task_name].history[0] == (
-        score,
-        duration,
-        description,
-    )
-
-
-test_create_user()
-test_add_task()
-test_add_history()
+    def save_to_json(self, filename):
+        data = {}
+        for user_id, user in self.users.items():
+            data[user_id] = {'tasks': {}, 'tomatoes': {}}
+            for task_name, task in user.tasks.items():
+                data[user_id]['tasks'][task_name] = task.description
+        with open(filename, 'w') as file:
+            json.dump(data, file)
