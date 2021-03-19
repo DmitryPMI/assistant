@@ -68,57 +68,10 @@ class Assistant:
             self.users[user_id] = user
 
     def save_to_json(self, filename):
+        data = {}
+        for user_id, user in self.users.items():
+            data[user_id] = {'tasks': {}, 'tomatoes': {}}
+            for task_name, task in user.tasks.items():
+                data[user_id]['tasks'][task_name] = task.description
         with open(filename, 'w') as file:
-            json.dump(self.users, file)
-
-
-def test_create_user():
-    assistant = Assistant()
-    for score in range(Assistant.MaxScore):
-        areas = {
-            Assistant.User.AreaOfBalance(i): score
-            for i in range(len(Assistant.User.AreaOfBalance))
-        }
-        user = f'user{score}'
-        assistant.add_user(user, areas)
-        assert (
-            assistant.users[user].areas[Assistant.User.AreaOfBalance.Adventures]
-            == score
-        )
-
-
-def test_add_task():
-    assistant = Assistant()
-    user = 'user with task'
-    task_name = 'first task'
-    area = Assistant.User.AreaOfBalance.Adventures
-    description = 'some description'
-    assistant.add_user(user).add_task(task_name, area, description)
-    assert assistant.users[user].tasks[task_name].area == area
-    assert assistant.users[user].tasks[task_name].description == description
-
-
-def test_add_history():
-    assistant = Assistant()
-    user = 'user with history'
-    task_name = 'first task'
-    area = Assistant.User.AreaOfBalance.Adventures
-    score = 3
-    duration = 25
-    ts = 1
-    description = 'some description'
-
-    assistant.add_user(user).add_task(task_name, area).add_history(
-        score, duration, ts, description
-    )
-    assert assistant.users[user].tasks[task_name].history[0] == (
-        score,
-        duration,
-        ts,
-        description,
-    )
-
-
-test_create_user()
-test_add_task()
-test_add_history()
+            json.dump(data, file)
