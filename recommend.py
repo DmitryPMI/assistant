@@ -4,7 +4,7 @@ import math
 import random
 import matplotlib.pyplot as plt
 import collections
-
+ 
 challenge_list = ['Примите душ (серотонин)',
                   'Примите контрастный душ (серотонин/эндорфин)',
                   'Прогуляйтесь (серотонин)',
