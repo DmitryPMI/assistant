@@ -107,6 +107,14 @@ influence = [[1, 0, 0, 0],
              [0, 0, 2, 0],
              [0, 3, 0, 0]]
 
+event_type_strength = {
+    1: 0.2,
+    2: 0.4,
+    3: 0.6,
+    4: 0.8,
+    5: 1.0,
+}
+
 
 def create_data(datasize):
     challenges = np.array([random.randint(0, len(challenge_list) - 1) for _ in range(datasize)])
@@ -116,14 +124,6 @@ def create_data(datasize):
             'challengenumber': challenges,
             'textmessage': np.array([challenge_list[i] for i in challenges])}
     df = pd.DataFrame(data=data)
-
-    event_type_strength = {
-        1: 0.2,
-        2: 0.4,
-        3: 0.6,
-        4: 0.8,
-        5: 1.0,
-    }
 
     df['eventStrength'] = df['benefit'].apply(lambda x: event_type_strength[x])
 
@@ -193,11 +193,15 @@ class KNNRec(object):
         self.interests = {}
         self.dic = {}
         self.bans = {}
+        self.count = {}
+        self.next = {}
 
     def fit(self, dic, interests, bans):
         self.interests = interests
         self.dic = dic
         self.bans = bans
+        for key in dic.keys():
+            self.count[key] = len(dic[key])
 
     def predict(self, key):
         ### Ищем ближайший профиль ###
@@ -233,13 +237,31 @@ class KNNRec(object):
             self.interests[id].append(challenge_number)
         if event_type_strength[benefit] < 0.5:
             self.bans[id].append(challenge_number)
+        self.count[id] += 1
+
+    def add_new_user(self, id):
+        if id not in self.dic.keys():
+            self.dic[id] = []
+            self.count[id] = 0
+            self.bans[id] = []
+            self.interests[id] = []
 
     def get_rating(self, id):
+        if not self.dic[id]:
+            return 0
         return (self.dic[id]).sum()
 
     def get_mean(self, id):
         return (self.dic[id]).mean()
 
+    def get_count(self, id):
+        return self.count[id]
+
+    def add_random_next(self, id):
+        self.next[id] = challenge_list[np.random.randint(len(challenge_list))]
+
+    def get_next_challenge(self, id):
+        return self.next[id]
 
 # метод fit принимает 3 параметра: словарь профилей, словарь интересов, словарь банов
 # метод predict принимает id пользователя, возвращает 3 лучших рекомендации
