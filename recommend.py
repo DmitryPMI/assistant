@@ -189,17 +189,17 @@ def uniq(arr):
 
 class KNNRec(object):
     def __init__(self):
-        self.dic = None
         self.interests = {}
         self.dic = {}
         self.bans = {}
         self.count = {}
         self.next = {}
 
-    def fit(self, dic, interests, bans):
+    def fit(self, dic, interests, bans, next):
         self.interests = interests
         self.dic = dic
         self.bans = bans
+        self.next = next
         for key in dic.keys():
             self.count[key] = len(dic[key])
 
@@ -229,6 +229,9 @@ class KNNRec(object):
         counts = collections.Counter(ints_final)
         new_ints_final = uniq(sorted(ints_final, key=lambda x: -counts[x]))[:3]
 
+        if np.random.randint(10) == 1:
+            new_ints_final.append(np.random.randint(len(challenge_list)))
+
         return min_key, new_ints_final
 
     def update_profiles(self, id, challenge_number, benefit):
@@ -241,13 +244,13 @@ class KNNRec(object):
 
     def add_new_user(self, id):
         if id not in self.dic.keys():
-            self.dic[id] = []
+            self.dic[id] = [0] * len(influence[0])
             self.count[id] = 0
             self.bans[id] = []
             self.interests[id] = []
 
     def get_rating(self, id):
-        if not self.dic[id]:
+        if not sum(self.dic[id]):
             return 0
         return (self.dic[id]).sum()
 
@@ -263,6 +266,9 @@ class KNNRec(object):
     def get_next_challenge(self, id):
         return self.next[id]
 
+    def get_challenge_number(self, task):
+        return challenge_list.index(task)
+
 # метод fit принимает 3 параметра: словарь профилей, словарь интересов, словарь банов
 # метод predict принимает id пользователя, возвращает 3 лучших рекомендации
 # метод update_profiles получает id человека, номер выполненного упражнения, и оценку.
@@ -271,7 +277,8 @@ class KNNRec(object):
 # метод get_mean возвращает средний показатель профиля для определенного id
 
 # Тут создается искусственный датасет, чтобы сеть как-то работала
-profiles, interests, bans = create_data(30000)
 
-rec_model = KNNRec()
-rec_model.fit(profiles, interests, bans)
+# profiles, interests, bans = create_data(30000)
+
+# rec_model = KNNRec()
+# rec_model.fit(profiles, interests, bans)

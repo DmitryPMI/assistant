@@ -69,6 +69,45 @@ def register_task_message(message):
     bot.register_next_step_handler(message, register_task_name)
 
 
+@bot.callback_query_handler(func=lambda call: True)
+def query_handler(call):
+    bot.answer_callback_query(callback_query_id=call.id, text='Спасибо, я запомнил :)')
+    answer = ''
+    if call.data == '1':
+        answer = 'Досадно, но дальше задания будут только лучше!'
+        personal_reccomendation.update_profiles(call.message.chat.id,
+                                                personal_reccomendation.get_challenge_number(
+                                                    personal_reccomendation.get_next_challenge(
+                                                        call.message.chat.id)), 1)
+    elif call.data == '2':
+        answer = 'Окей, я запомнил...'
+        personal_reccomendation.update_profiles(call.message.chat.id,
+                                                personal_reccomendation.get_challenge_number(
+                                                    personal_reccomendation.get_next_challenge(
+                                                        call.message.chat.id)), 2)
+    elif call.data == '3':
+        answer = 'Нормально :)'
+        personal_reccomendation.update_profiles(call.message.chat.id,
+                                                personal_reccomendation.get_challenge_number(
+                                                    personal_reccomendation.get_next_challenge(
+                                                        call.message.chat.id)), 3)
+    elif call.data == '4':
+        answer = 'Здорово, я рад, что тебе понравилось!'
+        personal_reccomendation.update_profiles(call.message.chat.id,
+                                                personal_reccomendation.get_challenge_number(
+                                                    personal_reccomendation.get_next_challenge(
+                                                        call.message.chat.id)), 4)
+    elif call.data == '5':
+        answer = 'Отлично! :D'
+        personal_reccomendation.update_profiles(call.message.chat.id,
+                                                personal_reccomendation.get_challenge_number(
+                                                    personal_reccomendation.get_next_challenge(
+                                                        call.message.chat.id)), 5)
+
+    bot.send_message(call.message.chat.id, text=answer, reply_markup=funcs.get_keyboard_default())
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+
+
 def register_task_name(message):
     name = message.text
     bot.send_message(message.from_user.id,
@@ -174,7 +213,7 @@ def get_text_messages(message):
         funcs.to_black_list(str(message.from_user.id), task_id)
         bot.send_message(message.from_user.id, 'Удалил ' + task['name'], reply_markup=funcs.get_keyboard_default())
     elif recommends_control.is_refers_to_reccomendation(message):
-        recommends_control.recomendation_command(bot, message, personal_reccomendation)
+        recommends_control.recomendation_command(bot, message, personal_reccomendation, chat_id)
     else:
         bot.send_message(message.from_user.id, 'Выбери действие', reply_markup=funcs.get_keyboard_default())
 

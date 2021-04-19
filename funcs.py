@@ -84,7 +84,17 @@ def get_personal_keyboard_task_type():
 
 
 def get_personal_random_choice():
-    keyboard = telebot.types.ReplyKeyboardMarkup()
+    keyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
     keyboard.add(telebot.types.KeyboardButton(text="Запустить"))
     keyboard.add(telebot.types.KeyboardButton(text="Выбрать другой"))
+    return keyboard
+
+
+def get_task_evaluation():
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    keyboard.add(telebot.types.InlineKeyboardButton(text='1', callback_data=1))
+    keyboard.add(telebot.types.InlineKeyboardButton(text='2', callback_data=2))
+    keyboard.add(telebot.types.InlineKeyboardButton(text='3', callback_data=3))
+    keyboard.add(telebot.types.InlineKeyboardButton(text='4', callback_data=4))
+    keyboard.add(telebot.types.InlineKeyboardButton(text='5', callback_data=5))
     return keyboard
