@@ -1,6 +1,7 @@
 # pylint: disable=C0111,R0903
 from enum import Enum
 import json
+import os
 
 
 class Assistant:
@@ -53,9 +54,15 @@ class Assistant:
         self.users[user] = self.User(areas)
         return self.users[user]
 
-    def load_from_json(self, filename):
-        with open(filename, 'r') as file:
-            data = json.load(file)
+    def load_from_json(self, path):
+        files = os.listdir(path)
+        data = {}
+        for filename in files:
+            with open(path + '/' + filename, 'r') as file:
+                curr_data = json.load(file)
+            data[filename.split('.')[0]] = curr_data
+        # with open(filename, 'r') as file:
+        #     data = json.load(file)
         users = data.keys()
         for user_id in users:
             user = self.User()
@@ -67,11 +74,14 @@ class Assistant:
                 user.tasks[task_json['name']] = task
             self.users[user_id] = user
 
-    def save_to_json(self, filename):
+    def save_to_json(self, path):
         data = {}
         for user_id, user in self.users.items():
             data[user_id] = {'tasks': {}, 'tomatoes': {}}
             for task_name, task in user.tasks.items():
                 data[user_id]['tasks'][task_name] = task.description
-        with open(filename, 'w') as file:
-            json.dump(data, file)
+        # with open(filename, 'w') as file:
+        #     json.dump(data, file)
+        for key, value in data.items():
+            with open(path + '/' + key + '.json', 'w') as file:
+                json.dump(value, file)

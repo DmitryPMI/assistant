@@ -27,13 +27,13 @@ def test_load_json():
         "5": {"name": "1233123", "description": "123131231", "status": 0}}, "tomatoes": {
         "0": {"task_id": "0", "answer": "\u042f \u043f\u044b\u0442\u0430\u043b\u0441\u044f",
               "ts": "03/15/2021, 12:03:57", "status": "1", "time_tomato": 1}}}}
-    with open('1.json', 'w') as file:
-        json.dump(test_data, file)
-    ai.load_from_json('1.json')
+    with open('data/279501304.json', 'w') as file:
+        json.dump(test_data['279501304'], file)
+    ai.load_from_json('data')
     assert "279501304" in ai.users
     assert ai.users["279501304"].tasks[test_data["279501304"]["tasks"]["0"]["name"]].description == \
            test_data["279501304"]["tasks"]["0"]["description"]
-    os.remove('1.json')
+    os.remove('data/279501304.json')
 
 
 def test_save_json():
@@ -51,15 +51,14 @@ def test_save_json():
         "5": {"name": "1233123", "description": "123131231", "status": 0}}, "tomatoes": {
         "0": {"task_id": "0", "answer": "\u042f \u043f\u044b\u0442\u0430\u043b\u0441\u044f",
               "ts": "03/15/2021, 12:03:57", "status": "1", "time_tomato": 1}}}}
-    with open('1.json', 'w') as file:
-        json.dump(test_data, file)
-    ai.load_from_json('1.json')
-    ai.save_to_json('2.json')
-    with open('2.json', 'r') as file:
+    with open('data/279501304.json', 'w') as file:
+        json.dump(test_data['279501304'], file)
+    ai.load_from_json('data')
+    ai.save_to_json('data')
+    with open('data/279501304.json', 'r') as file:
         data = json.load(file)
-    assert "279501304" in data.keys()
-    os.remove('1.json')
-    os.remove('2.json')
+    assert "279501304.json" in os.listdir('data')
+    os.remove('data/279501304.json')
 
 
 def test_create_user():

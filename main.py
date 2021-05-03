@@ -13,14 +13,14 @@ import recommends_control
 import config.config as conf
 
 tomato_time = 1
-filename = 'test_data.json'
+# filename = 'test_data.json'
 
-if filename not in listdir():
-    with open(filename, 'w') as file:
-        json.dump({}, file)
+# if filename not in listdir():
+#     with open(filename, 'w') as file:
+#         json.dump({}, file)
 
 assistant = Assistant()
-assistant.load_from_json(filename)
+assistant.load_from_json(conf.DATA_PATH)
 
 bot = telebot.TeleBot(conf.TOKEN)
 keyboard_start_tomat = telebot.types.ReplyKeyboardMarkup(True, True)
@@ -34,12 +34,9 @@ def register_id(user_id):
         assistant.add_user(str(user_id))
     except ValueError:
         print('Пользователь уже существует')
-    with open(filename, "r", encoding="UTF-8") as file:
-        data = json.load(file)
-    if user_id not in data.keys():
-        data[user_id] = {"tasks": {}, "tomatoes": {}}
-    with open(filename, "w", encoding="UTF-8") as file:
-        json.dump(data, file)
+    if str(user_id)  + '.json' not in listdir(conf.DATA_PATH):
+        with open(conf.DATA_PATH + '/' + str(user_id)  + '.json', "w", encoding="UTF-8") as file:
+            json.dump({"tasks": {}, "tomatoes": {}}, file)
 
 
 @bot.message_handler(commands=['start'])
@@ -111,7 +108,7 @@ def query_handler(call):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
 @bot.message_handler(content_types=['voice'])
-def start_tomato_message(message):
+def start_voice_message(message):
     register_id(str(message.from_user.id))
     file_info = bot.get_file(message.voice.file_id)
     audio = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(conf.TOKEN, file_info.file_path))
@@ -132,14 +129,14 @@ def register_task_description(message, name):
 
 def register_task(bot, message, name, description):
     user_id = str(message.from_user.id)
-    with open(filename, "r", encoding="UTF-8") as file:
+    with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
         data = json.load(file)
-    if data[user_id]["tasks"] == {}:
+    if data["tasks"] == {}:
         task_id = "0"
     else:
-        task_id = str(max(map(int, data[user_id]["tasks"].keys())) + 1)
-    data[user_id]["tasks"][task_id] = {"name": name, "description": description, "status": 0}
-    with open(filename, "w", encoding="UTF-8") as file:
+        task_id = str(max(map(int, data["tasks"].keys())) + 1)
+    data["tasks"][task_id] = {"name": name, "description": description, "status": 0}
+    with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
         json.dump(data, file)
     assistant.users[str(message.from_user.id)].add_task(name, 6, description)
     bot.send_message(message.from_user.id, "Готово, задача в списке доступных томатов",
@@ -166,16 +163,16 @@ def start_personal_tomato(task, message, chat_id):
 def save_tomato(message, bot, task_id, time_start, status, time_tomato):
     answer = message.text
     user_id = str(message.from_user.id)
-    with open(filename, "r", encoding="UTF-8") as file:
+    with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
         data = json.load(file)
-    if data[user_id]["tomatoes"] == {}:
+    if data["tomatoes"] == {}:
         tomato_id = "0"
     else:
-        tomato_id = str(max(map(int, data[user_id]["tomatoes"].keys())) + 1)
-    data[user_id]["tomatoes"][tomato_id] = {'task_id': task_id, 'answer': answer, 'ts': time_start, 'status': status,
+        tomato_id = str(max(map(int, data["tomatoes"].keys())) + 1)
+    data["tomatoes"][tomato_id] = {'task_id': task_id, 'answer': answer, 'ts': time_start, 'status': status,
                                             'time_tomato': time_tomato}
-    task_name = data[user_id]["tasks"][task_id]["name"]
-    with open(filename, "w", encoding="UTF-8") as file:
+    task_name = data["tasks"][task_id]["name"]
+    with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
         json.dump(data, file)
     assistant.users[str(message.from_user.id)].tasks[task_name].add_history(status, time_tomato, time_start, answer)
     bot.send_message(message.from_user.id, "Не мне тебя судить, но я записал",
@@ -194,7 +191,7 @@ def get_time_special_tomato(message, task_id, task, chat_id):
     current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
     funcs.start_printed_timer(bot, message, time_tomato * 60, chat_id)
     bot.send_message(message.from_user.id, task['description'])
-    bot.register_next_step_handler(message, lambda message: funcs.get_status_tomato(message, bot, task_id, current_time,
+    bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
                                                                                     time_tomato))
 
 

@@ -2,7 +2,7 @@ import time
 import telebot
 import json
 
-filename = 'test_data.json'
+# filename = 'test_data.json'
 
 
 def start_printed_timer(bot, message, time_in_seconds, chat_id):
@@ -18,9 +18,9 @@ def start_printed_timer(bot, message, time_in_seconds, chat_id):
 
 
 def load_tasks(user_id):
-    with open(filename, "r", encoding="UTF-8") as file:
+    with open("data/" + str(user_id) + ".json" , "r", encoding="UTF-8") as file:
         data = json.load(file)
-    return data[str(user_id)]["tasks"]
+    return data["tasks"]
 
 
 def get_keyboard_tasks(tasks, prefix=""):
@@ -62,10 +62,10 @@ def get_task_by_name(name, tasks):
 
 
 def to_black_list(user_id, task_id):
-    with open(filename, "r", encoding="UTF-8") as file:
+    with open("data/" + str(user_id) + ".json", "r", encoding="UTF-8") as file:
         data = json.load(file)
-    data[user_id]["tasks"][task_id]['status'] = 1
-    with open(filename, "w", encoding="UTF-8") as file:
+    data["tasks"][task_id]['status'] = 1
+    with open("data/" + str(user_id) + ".json", "w", encoding="UTF-8") as file:
         json.dump(data, file)
 
 
