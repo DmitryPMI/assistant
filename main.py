@@ -1,9 +1,11 @@
 import telebot
 import time
 import funcs
+import audio_recognition_funcs
 from datetime import datetime
 import json
 from os import listdir
+import requests
 
 from assistant import Assistant
 import recommend
@@ -19,7 +21,7 @@ if filename not in listdir():
 assistant = Assistant()
 assistant.load_from_json(filename)
 
-bot = telebot.TeleBot('1583853458:AAGKFi8qgnmWNZYrnCBySoTVE51A5lB3KNU')
+bot = telebot.TeleBot('1660376392:AAHqeib5RhnCGZPUl8p-c4Fi8Cc5iB381PM')
 keyboard_start_tomat = telebot.types.ReplyKeyboardMarkup(True, True)
 keyboard_start_tomat.row('Начнем!')
 
@@ -107,6 +109,13 @@ def query_handler(call):
     bot.send_message(call.message.chat.id, text=answer, reply_markup=funcs.get_keyboard_default())
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
+@bot.message_handler(content_types=['voice'])
+def start_tomato_message(message):
+    register_id(str(message.from_user.id))
+    file_info = bot.get_file(message.voice.file_id)
+    audio = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format('1660376392:AAHqeib5RhnCGZPUl8p-c4Fi8Cc5iB381PM', file_info.file_path))
+    res = audio_recognition_funcs.get_emotion_from_audio(audio.content)
+    bot.send_message(message.from_user.id, f'Эмоция: {res}', reply_markup=keyboard_start_tomat)
 
 def register_task_name(message):
     name = message.text
