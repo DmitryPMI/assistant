@@ -3,6 +3,7 @@ import librosa
 from tensorflow import keras
 import requests
 import os
+import config.config as conf
 
 
 emotion_list = ['Angry', 'Disgusted', 'Domination', 'Happy', 'Neutral', 'Sad', 'Scared', 'Shame', 'Submission', 'Surprised', 'Tiredness']
@@ -14,7 +15,7 @@ def features_extractor(audio):
 
 
 def get_emotion_from_audio(audio):
-	r = requests.get('https://storage.yandexcloud.net/assistant-bot-bucket/saved_models/my_model_1.hdf5', allow_redirects=True)
+	r = requests.get(conf.MODEL_PATH, allow_redirects=True)
 	with open('test.hdf5', 'wb') as f:
 		f.write(r.content)
 	model = keras.models.load_model('test.hdf5')

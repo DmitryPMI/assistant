@@ -10,6 +10,7 @@ import requests
 from assistant import Assistant
 import recommend
 import recommends_control
+import config.config as conf
 
 tomato_time = 1
 filename = 'test_data.json'
@@ -21,7 +22,7 @@ if filename not in listdir():
 assistant = Assistant()
 assistant.load_from_json(filename)
 
-bot = telebot.TeleBot('1660376392:AAHqeib5RhnCGZPUl8p-c4Fi8Cc5iB381PM')
+bot = telebot.TeleBot(conf.TOKEN)
 keyboard_start_tomat = telebot.types.ReplyKeyboardMarkup(True, True)
 keyboard_start_tomat.row('Начнем!')
 
@@ -113,7 +114,7 @@ def query_handler(call):
 def start_tomato_message(message):
     register_id(str(message.from_user.id))
     file_info = bot.get_file(message.voice.file_id)
-    audio = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format('1660376392:AAHqeib5RhnCGZPUl8p-c4Fi8Cc5iB381PM', file_info.file_path))
+    audio = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(conf.TOKEN, file_info.file_path))
     res = audio_recognition_funcs.get_emotion_from_audio(audio.content)
     bot.send_message(message.from_user.id, f'Эмоция: {res}', reply_markup=keyboard_start_tomat)
 
