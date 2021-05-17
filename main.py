@@ -113,7 +113,9 @@ def start_voice_message(message):
     file_info = bot.get_file(message.voice.file_id)
     audio = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(conf.TOKEN, file_info.file_path))
     res = audio_recognition_funcs.get_emotion_from_audio(audio.content)
+    adv = audio_recognition_funcs.get_nearest(audio_recognition_funcs.get_vector_from_emotion(res))
     bot.send_message(message.from_user.id, f'Эмоция: {res}', reply_markup=keyboard_start_tomat)
+    bot.send_message(message.from_user.id, f'Рекомендую: {adv}', reply_markup=keyboard_start_tomat)
 
 def register_task_name(message):
     name = message.text
