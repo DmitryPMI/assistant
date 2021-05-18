@@ -1,7 +1,9 @@
 import time
 import telebot
 import json
-
+from datetime import datetime
+from datetime import time
+import numpy as np
 # filename = 'test_data.json'
 
 
@@ -98,3 +100,20 @@ def get_task_evaluation():
     keyboard.add(telebot.types.InlineKeyboardButton(text='4', callback_data=4))
     keyboard.add(telebot.types.InlineKeyboardButton(text='5', callback_data=5))
     return keyboard
+
+def get_random_timers(time_start, time_end, n_timers, interval = 30):
+    timers = []
+    upper = time_end.hour * 60 + time_end.minute
+    lower = time_start.hour * 60 + time_start.minute
+    if upper - lower < interval:
+        timer = np.random.randint(lower, upper)
+        return [time(timer // 60, timer % 60, 0)]
+    current_upper = lower + interval
+    current_lower = lower
+    while current_upper < upper and len(timers) < n_timers:
+        timer = np.random.randint(current_lower, current_upper)
+        timers.append(time(timer // 60, timer % 60, 0))
+        current_lower = timer + interval
+        current_upper = current_lower + interval
+    return timers
+    

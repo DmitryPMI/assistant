@@ -11,6 +11,7 @@ from assistant import Assistant
 import recommend
 import recommends_control
 import config.config as conf
+import datetime as dt
 
 tomato_time = 1
 # filename = 'test_data.json'
@@ -27,6 +28,18 @@ keyboard_start_tomat = telebot.types.ReplyKeyboardMarkup(True, True)
 keyboard_start_tomat.row('Начнем!')
 
 personal_reccomendation = recommend.KNNRec()
+
+timers = funcs.get_random_timers(dt.time(8, 0, 0), dt.time(18, 0, 0), 5, 1)
+timers  = [dt.time(9, 16, 0)] + timers
+# print(timers)
+
+def check_timers(message):
+    if len(timers) > 0:
+        timer = timers[0]
+        current_dt = datetime.now()
+        if current_dt.hour * 60 + current_dt.minute + current_dt.second / 60 > timer.hour * 60 + timer.minute:
+            bot.send_message(message.from_user.id, 'Таймер!!')
+            del timers[0]
 
 
 def register_id(user_id):
@@ -201,6 +214,7 @@ def get_time_special_tomato(message, task_id, task, chat_id):
 def get_text_messages(message):
     chat_id = message.chat.id
     register_id(str(message.from_user.id))
+    check_timers(message)
     if message.text.lower() == 'привет':
         bot.send_message(message.from_user.id, 'Привет!')
     elif message.text.lower() == 'запустить томат':
