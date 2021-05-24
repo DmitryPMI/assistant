@@ -50,7 +50,7 @@ def get_keyboard_personal():
 def get_keyboard_type_tomato():
     keyboard = telebot.types.ReplyKeyboardMarkup()
     keyboard.add(telebot.types.KeyboardButton(text="Стандартный томат"))
-    keyboard.add(telebot.types.KeyboardButton(text="Особый томат"))
+    keyboard.add(telebot.types.KeyboardButton(text="Удалить томат"))
     return keyboard
 
 

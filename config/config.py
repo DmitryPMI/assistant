@@ -1,3 +1,3 @@
-TOKEN = '1778849675:AAGj5pNWCLHq8qvISuXlV9iTub1jkm36j-g'
+TOKEN = '1660376392:AAHqeib5RhnCGZPUl8p-c4Fi8Cc5iB381PM'
 MODEL_PATH = 'https://storage.yandexcloud.net/assistant-bot-bucket/saved_models/my_model_1.hdf5'
 DATA_PATH = 'data'
