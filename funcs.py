@@ -2,7 +2,6 @@ import time
 import telebot
 import json
 
-# filename = 'test_data.json'
 
 
 def start_printed_timer(bot, message, time_in_seconds, chat_id):
@@ -14,7 +13,13 @@ def start_printed_timer(bot, message, time_in_seconds, chat_id):
         bot.edit_message_text("Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60, time_in_seconds % 60),
                               message_id=mes_id, chat_id=chat_id)
         time_in_seconds -= 1
-        time.sleep(1)
+        try:
+            with open('data/flag.json', 'r') as file:
+                data = json.load(file)
+            if data[str(message.from_user.id)]['flag'] == 1:
+                break
+        except:
+            time.sleep(1)
 
 
 def load_tasks(user_id):
@@ -50,7 +55,7 @@ def get_keyboard_personal():
 def get_keyboard_type_tomato():
     keyboard = telebot.types.ReplyKeyboardMarkup()
     keyboard.add(telebot.types.KeyboardButton(text="Стандартный томат"))
-    keyboard.add(telebot.types.KeyboardButton(text="Удалить томат"))
+    keyboard.add(telebot.types.KeyboardButton(text="Остановить томат"))
     return keyboard
 
 

@@ -11,8 +11,10 @@ from assistant import Assistant
 import recommend
 import recommends_control
 import config.config as conf
+import multiprocessing
 
 tomato_time = 1
+tomato_processes = {}
 # filename = 'test_data.json'
 
 # if filename not in listdir():
@@ -203,6 +205,16 @@ def get_text_messages(message):
     register_id(str(message.from_user.id))
     if message.text.lower() == 'привет':
         bot.send_message(message.from_user.id, 'Привет!')
+    elif message.text.lower() == 'остановить томат':
+        try:
+            with open('data/flag.json', 'r') as file:
+                data_flags = json.load(file)
+        except:
+            data_flags = {}
+        data_flags[str(message.from_user.id)] = {}
+        data_flags[str(message.from_user.id)]['flag'] = 1
+        with open('data/flag.json', 'w') as file:
+            json.dump(data_flags, file)
     elif message.text.lower() == 'запустить томат':
         bot.send_message(message.from_user.id, 'Выбери задачу из списка:',
                          reply_markup=funcs.get_keyboard_tasks(funcs.load_tasks(message.from_user.id)))
