@@ -3,25 +3,6 @@ import telebot
 import json
 
 
-
-def start_printed_timer(bot, message, time_in_seconds, chat_id):
-    mes_id = bot.send_message(message.chat.id,
-                              "Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60,
-                                                               time_in_seconds % 60)).message_id
-    time_in_seconds -= 1
-    while time_in_seconds >= 0:
-        bot.edit_message_text("Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60, time_in_seconds % 60),
-                              message_id=mes_id, chat_id=chat_id)
-        time_in_seconds -= 1
-        try:
-            with open('data/flag.json', 'r') as file:
-                data = json.load(file)
-            if data[str(message.from_user.id)]['flag'] == 1:
-                break
-        except:
-            time.sleep(1)
-
-
 def load_tasks(user_id):
     with open("data/" + str(user_id) + ".json" , "r", encoding="UTF-8") as file:
         data = json.load(file)

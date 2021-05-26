@@ -31,11 +31,11 @@ class Assistant:
         class Task:
             def __init__(self, area, description=None):
                 self.area = area
-                self.description = description
+                # self.description = description
                 self.history = []
 
-            def add_history(self, score, duration, ts, description):
-                self.history.append((score, duration, ts, description))
+            def add_history(self, score, duration, ts, rate):
+                self.history.append((score, duration, ts, rate))
 
         def __init__(self, areas=None):
             self.areas = areas

@@ -11,15 +11,10 @@ from assistant import Assistant
 import recommend
 import recommends_control
 import config.config as conf
-import multiprocessing
+from threading import Thread
 
 tomato_time = 1
 tomato_processes = {}
-# filename = 'test_data.json'
-
-# if filename not in listdir():
-#     with open(filename, 'w') as file:
-#         json.dump({}, file)
 
 assistant = Assistant()
 assistant.load_from_json(conf.DATA_PATH)
@@ -147,13 +142,37 @@ def register_task(bot, message, name, description):
                      reply_markup=funcs.get_keyboard_default())
 
 
+def start_printed_timer(bot, message, time_in_seconds, chat_id):
+    mes_id = bot.send_message(message.chat.id,
+                              "Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60,
+                                                               time_in_seconds % 60)).message_id
+    time_in_seconds -= 1
+    while time_in_seconds >= 0:
+        bot.edit_message_text("Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60, time_in_seconds % 60),
+                              message_id=mes_id, chat_id=chat_id)
+        time_in_seconds -= 1
+        try:
+            with open('flag.json', 'r') as file:
+                data = json.load(file)
+            if data[str(message.from_user.id)]['flag'] == 1:
+                data[str(message.from_user.id)]['flag'] = 0
+                with open('flag.json', 'w') as file:
+                    json.dump(data, file)
+                break
+            time.sleep(1)
+        except:
+            time.sleep(1)
+    bot.send_message(message.from_user.id, "Оцени эффективность.")
+    # bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
+    #                                                                                   tomato_time))
+
+
 def get_time_tomato(bot, message, task_id, task, chat_id):
     if message.text.lower() == 'стандартный томат':
         current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-        funcs.start_printed_timer(bot, message, tomato_time * 60, chat_id)
-        bot.send_message(message.from_user.id, task['description'])
-        bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
-                                                                                  tomato_time))
+        t = Thread(target = lambda msg: start_printed_timer(bot, msg, tomato_time * 60, chat_id), args = (message,))
+        t.start()
+        
     else:
         bot.send_message(message.from_user.id, 'Сколько минут длится томат?')
         bot.register_next_step_handler(message,
@@ -161,7 +180,7 @@ def get_time_tomato(bot, message, task_id, task, chat_id):
 
 
 def start_personal_tomato(task, message, chat_id):
-    funcs.start_printed_timer(bot, message, 60, chat_id)
+    start_printed_timer(bot, message, 60, chat_id)
 
 
 def save_tomato(message, bot, task_id, time_start, status, time_tomato):
@@ -193,7 +212,7 @@ def get_status_tomato(message, bot, task_id, time_start, time_tomato):
 def get_time_special_tomato(message, task_id, task, chat_id):
     time_tomato = int(message.text)
     current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-    funcs.start_printed_timer(bot, message, time_tomato * 60, chat_id)
+    start_printed_timer(bot, message, time_tomato * 60, chat_id)
     bot.send_message(message.from_user.id, task['description'])
     bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
                                                                                     time_tomato))
@@ -207,13 +226,13 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, 'Привет!')
     elif message.text.lower() == 'остановить томат':
         try:
-            with open('data/flag.json', 'r') as file:
+            with open('flag.json', 'r') as file:
                 data_flags = json.load(file)
         except:
             data_flags = {}
         data_flags[str(message.from_user.id)] = {}
         data_flags[str(message.from_user.id)]['flag'] = 1
-        with open('data/flag.json', 'w') as file:
+        with open('flag.json', 'w') as file:
             json.dump(data_flags, file)
     elif message.text.lower() == 'запустить томат':
         bot.send_message(message.from_user.id, 'Выбери задачу из списка:',
