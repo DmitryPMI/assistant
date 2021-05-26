@@ -114,16 +114,10 @@ def start_voice_message(message):
     bot.send_message(message.from_user.id, f'Эмоция: {res}', reply_markup=keyboard_start_tomat)
     bot.send_message(message.from_user.id, f'Рекомендую: {adv}', reply_markup=keyboard_start_tomat)
 
+
 def register_task_name(message):
     name = message.text
-    bot.send_message(message.from_user.id,
-                     'Теперь описание. Напиши вопрос, который отражает твою продуктивность по данной задаче.')
-    bot.register_next_step_handler(message, lambda message: register_task_description(message, name))
-
-
-def register_task_description(message, name):
-    description = message.text
-    register_task(bot, message, name, description)
+    register_task(bot, message, name, "description")
 
 
 def register_task(bot, message, name, description):
