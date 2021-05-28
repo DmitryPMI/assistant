@@ -8,6 +8,12 @@ def load_tasks(user_id):
         data = json.load(file)
     return data["tasks"]
 
+def load_active_tomatoes(user_id):
+    with open("data/" + str(user_id) + ".json" , "r", encoding="UTF-8") as file:
+        data = json.load(file)
+    print(data["tomatoes"].values())
+    return list(filter(lambda x: x["status"] == 0, data["tomatoes"].values()))
+
 
 def get_keyboard_tasks(tasks, prefix=""):
     keyboard = telebot.types.ReplyKeyboardMarkup()

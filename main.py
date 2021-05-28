@@ -136,7 +136,7 @@ def register_task(bot, message, name, description):
                      reply_markup=funcs.get_keyboard_default())
 
 
-def start_printed_timer(bot, message, time_in_seconds, chat_id):
+def start_printed_timer(bot, message, time_in_seconds, chat_id, task, tomato_id):
     mes_id = bot.send_message(message.chat.id,
                               "Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60,
                                                                time_in_seconds % 60)).message_id
@@ -148,8 +148,8 @@ def start_printed_timer(bot, message, time_in_seconds, chat_id):
         try:
             with open('flag.json', 'r') as file:
                 data = json.load(file)
-            if data[str(message.from_user.id)]['flag'] == 1:
-                data[str(message.from_user.id)]['flag'] = 0
+            if data[str(message.from_user.id)][task['name']] == 1:
+                data[str(message.from_user.id)][task['name']] = 0
                 with open('flag.json', 'w') as file:
                     json.dump(data, file)
                 break
@@ -158,21 +158,52 @@ def start_printed_timer(bot, message, time_in_seconds, chat_id):
             time.sleep(1)
     print('stop')
     bot.send_message(message.from_user.id, "Оцени эффективность.", reply_markup=funcs.get_mark())
-    bot.register_next_step_handler(message, lambda message: save_tomato1(message, bot))
+    bot.register_next_step_handler(message, lambda message: save_tomato1(message, bot, tomato_id))
 
 
 def get_time_tomato(bot, message, task_id, task, chat_id):
     if message.text.lower() == 'стандартный томат':
+        user_id = str(message.from_user.id)
         current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-        t = Thread(target = lambda msg: start_printed_timer(bot, msg, tomato_time * 60, chat_id), args = (message,))
+        with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
+            data = json.load(file)
+        if data["tomatoes"] == {}:
+            tomato_id = "0"
+        else:
+            tomato_id = str(max(map(int, data["tomatoes"].keys())) + 1)
+        data["tomatoes"][tomato_id] = {'task_id': task_id, 'answer': None, 'ts': current_time, 'status': 0,
+                                                'time_tomato': tomato_time, 'mark': None}
+        with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
+            json.dump(data, file)                             
+        t = Thread(target = lambda msg: start_printed_timer(bot, msg, tomato_time * 60, chat_id, task, tomato_id), args = (message,))
         t.start()
+
+def stop_tomato(message):
+    task_name = message.text 
+    try:
+        with open('flag.json', 'r') as file:
+            data_flags = json.load(file)
+    except:
+        data_flags = {}
+    if str(message.from_user.id) not in data_flags:
+        data_flags[str(message.from_user.id)] = {}
+    data_flags[str(message.from_user.id)][task_name] = 1
+    with open('flag.json', 'w') as file:
+        json.dump(data_flags, file)
 
 
 def start_personal_tomato(task, message, chat_id):
     start_printed_timer(bot, message, 60, chat_id)
 
-def save_tomato1(message, bot):
+def save_tomato1(message, bot, tomato_id):
     status = message.text
+    user_id = str(message.from_user.id)
+    with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
+        data = json.load(file)
+    data['tomatoes'][tomato_id]['mark'] = status
+    data['tomatoes'][tomato_id]['status'] = 1
+    with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
+        json.dump(data, file) 
     bot.send_message(message.from_user.id, f"Понял принял, оценка {status}", reply_markup=funcs.get_keyboard_default())
 
 def save_tomato(message, bot, task_id, time_start, status, time_tomato):
@@ -217,15 +248,16 @@ def get_text_messages(message):
     if message.text.lower() == 'привет':
         bot.send_message(message.from_user.id, 'Привет!')
     elif message.text.lower() == 'остановить томат':
-        try:
-            with open('flag.json', 'r') as file:
-                data_flags = json.load(file)
-        except:
-            data_flags = {}
-        data_flags[str(message.from_user.id)] = {}
-        data_flags[str(message.from_user.id)]['flag'] = 1
-        with open('flag.json', 'w') as file:
-            json.dump(data_flags, file)
+        active_tomatoes = funcs.load_active_tomatoes(message.from_user.id)
+        if active_tomatoes == []:
+            bot.send_message(message.from_user.id, 'Нет активных томатов', reply_markup=funcs.get_keyboard_default())
+        else:
+            task_ids = list(map(lambda x: x['task_id'], active_tomatoes))
+            tasks = funcs.load_tasks(message.from_user.id)
+            task_names = [tasks[task_id]['name'] for task_id in task_ids]
+            print(task_names)
+            bot.send_message(message.from_user.id, 'Выбери томат', reply_markup = funcs.get_personal_tasks(task_names))
+            bot.register_next_step_handler(message, stop_tomato)
     elif message.text.lower() == 'запустить томат':
         bot.send_message(message.from_user.id, 'Выбери задачу из списка:',
                          reply_markup=funcs.get_keyboard_tasks(funcs.load_tasks(message.from_user.id)))
