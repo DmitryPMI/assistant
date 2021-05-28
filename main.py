@@ -224,7 +224,7 @@ def get_text_messages(message):
     if message.text.lower() == 'привет':
         bot.send_message(message.from_user.id, 'Привет!')
     elif message.text.lower() in ['да', 'нет']:
-        bot.send_message(message.from_user.id, 'Понял :)', reply_markup=get_keyboard_default())
+        bot.send_message(message.from_user.id, 'Понял :)', reply_markup=funcs.get_keyboard_default())
     elif message.text.lower() == 'режим таймеров':
         bot.send_message(message.from_user.id, 'Вы находитесь в режиме таймеров', reply_markup=funcs.get_keyboard_timers())
     elif message.text.lower() == 'включить таймеры':
