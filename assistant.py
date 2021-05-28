@@ -76,7 +76,7 @@ class Assistant:
         for user_id, user in self.users.items():
             data[user_id] = {'tasks': {}, 'tomatoes': {}}
             for task_name, task in user.tasks.items():
-                data[user_id]['tasks'][task_name] = task.description
+                data[user_id]['tasks'][task_name] = task.description    
         for key, value in data.items():
             with open(path + '/' + key + '.json', 'w') as file:
                 json.dump(value, file)
