@@ -1,6 +1,9 @@
 import time
 import telebot
+from datetime import datetime
+from datetime import time
 import json
+import numpy as np
 
 
 def load_tasks(user_id):
@@ -30,6 +33,7 @@ def get_keyboard_default():
     keyboard.add(telebot.types.KeyboardButton(text="Добавить задачу"))
     keyboard.add(telebot.types.KeyboardButton(text="Удалить задачу"))
     keyboard.add(telebot.types.KeyboardButton(text="Остановить томат"))
+    keyboard.add(telebot.types.KeyboardButton(text="Режим таймеров"))
     return keyboard
 
 
@@ -100,6 +104,18 @@ def get_mark():
     keyboard.add(telebot.types.KeyboardButton(text="5"))
     return keyboard
 
+def get_keyboard_timers():
+    keyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    keyboard.add(telebot.types.KeyboardButton(text="Включить таймеры"))
+    keyboard.add(telebot.types.KeyboardButton(text="Выключить таймеры"))
+    return keyboard
+
+def yes_no():
+    keyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    keyboard.add(telebot.types.KeyboardButton(text="Да"))
+    keyboard.add(telebot.types.KeyboardButton(text="Нет"))
+    return keyboard
+
 def start_printed_timer(bot, message, time_in_seconds, chat_id):
     mes_id = bot.send_message(message.chat.id,
                               "Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60,
@@ -111,3 +127,18 @@ def start_printed_timer(bot, message, time_in_seconds, chat_id):
         time_in_seconds -= 1
         time.sleep(1)
 
+def get_random_timers(time_start, time_end, n_timers, interval = 30 * 60):
+    timers = []
+    upper = time_end.hour * 60 + time_end.minute
+    lower = time_start.hour * 60 + time_start.minute
+    if upper - lower < interval:
+        timer = np.random.randint(lower, upper)
+        return [time(timer // 60, timer % 60, 0)]
+    current_upper = lower + interval
+    current_lower = lower
+    while current_upper < upper and len(timers) < n_timers:
+        timer = np.random.randint(current_lower, current_upper)
+        timers.append(time(timer // 60, timer % 60, 0))
+        current_lower = timer + interval
+        current_upper = current_lower + interval
+    return timers

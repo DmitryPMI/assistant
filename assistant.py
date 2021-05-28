@@ -64,7 +64,7 @@ class Assistant:
         for user_id in users:
             user = self.User()
             for task_id, task_json in data[user_id]['tasks'].items():
-                task = user.Task(6, task_json['description'])
+                task = user.Task(6)
                 for tomato_id, tomato_json in data[user_id]['tomatoes'].items():
                     if tomato_json['task_id'] == task_id:
                         task.add_history(tomato_json['status'], tomato_json['time_tomato'], tomato_json['ts'], tomato_json['answer'])

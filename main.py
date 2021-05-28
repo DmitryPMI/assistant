@@ -12,12 +12,14 @@ import recommend
 import recommends_control
 import config.config as conf
 from threading import Thread
+import datetime as dt
 
 tomato_time = 25
-tomato_processes = {}
-
+n_timers = 10
 assistant = Assistant()
 assistant.load_from_json(conf.DATA_PATH)
+
+timers_enabled = {}
 
 bot = telebot.TeleBot(conf.TOKEN)
 keyboard_start_tomat = telebot.types.ReplyKeyboardMarkup(True, True)
@@ -25,6 +27,17 @@ keyboard_start_tomat.row('Начнем!')
 
 personal_reccomendation = recommend.KNNRec()
 
+def check_timers(message):
+    timers = funcs.get_random_timers(dt.time(8, 0, 0), dt.time(18, 0, 0), n_timers, 30 * 60)
+    while len(timers) > 0:
+        timer = timers[0]
+        current_dt = datetime.now()
+        if current_dt.hour * 60 + current_dt.minute + current_dt.second / 60 > timer.hour * 60 + timer.minute:
+            bot.send_message(message.from_user.id, 'Это таймер эффективности. Полезно ли то, чем ты занимаешься сейчас?', reply_markup=funcs.yes_no())
+            del timers[0]
+        if timers_enabled[str(message.from_user.id)] == 0:
+            break
+        time.sleep(60)
 
 def register_id(user_id):
     try:
@@ -210,6 +223,18 @@ def get_text_messages(message):
     register_id(str(message.from_user.id))
     if message.text.lower() == 'привет':
         bot.send_message(message.from_user.id, 'Привет!')
+    elif message.text.lower() in ['да', 'нет']:
+        bot.send_message(message.from_user.id, 'Понял :)', reply_markup=get_keyboard_default())
+    elif message.text.lower() == 'режим таймеров':
+        bot.send_message(message.from_user.id, 'Вы находитесь в режиме таймеров', reply_markup=funcs.get_keyboard_timers())
+    elif message.text.lower() == 'включить таймеры':
+        timers_enabled[str(message.from_user.id)] = 1
+        t = Thread(target = lambda message: check_timers(message), args=(message,))
+        t.start()
+        bot.send_message(message.from_user.id, 'Режим таймеров включен', reply_markup=funcs.get_keyboard_default())
+    elif message.text.lower() == 'выключить таймеры':
+        timers_enabled[str(message.from_user.id)] = 0
+        bot.send_message(message.from_user.id, 'Режим таймеров выключен', reply_markup=funcs.get_keyboard_default())
     elif message.text.lower() == 'остановить томат':
         active_tomatoes = funcs.load_active_tomatoes(message.from_user.id)
         if active_tomatoes == []:
