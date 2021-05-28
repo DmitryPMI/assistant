@@ -11,16 +11,15 @@ from assistant import Assistant
 import recommend
 import recommends_control
 import config.config as conf
+from threading import Thread
+import datetime as dt
 
-tomato_time = 1
-# filename = 'test_data.json'
-
-# if filename not in listdir():
-#     with open(filename, 'w') as file:
-#         json.dump({}, file)
-
+tomato_time = 25
+n_timers = 10
 assistant = Assistant()
 assistant.load_from_json(conf.DATA_PATH)
+
+timers_enabled = {}
 
 bot = telebot.TeleBot(conf.TOKEN)
 keyboard_start_tomat = telebot.types.ReplyKeyboardMarkup(True, True)
@@ -28,6 +27,17 @@ keyboard_start_tomat.row('Начнем!')
 
 personal_reccomendation = recommend.KNNRec()
 
+def check_timers(message):
+    timers = funcs.get_random_timers(dt.time(8, 0, 0), dt.time(18, 0, 0), n_timers, 30 * 60)
+    while len(timers) > 0:
+        timer = timers[0]
+        current_dt = datetime.now()
+        if current_dt.hour * 60 + current_dt.minute + current_dt.second / 60 > timer.hour * 60 + timer.minute:
+            bot.send_message(message.from_user.id, 'Это таймер эффективности. Полезно ли то, чем ты занимаешься сейчас?', reply_markup=funcs.yes_no())
+            del timers[0]
+        if timers_enabled[str(message.from_user.id)] == 0:
+            break
+        time.sleep(60)
 
 def register_id(user_id):
     try:
@@ -117,16 +127,10 @@ def start_voice_message(message):
     bot.send_message(message.from_user.id, f'Эмоция: {res}', reply_markup=keyboard_start_tomat)
     bot.send_message(message.from_user.id, f'Рекомендую: {adv}', reply_markup=keyboard_start_tomat)
 
+
 def register_task_name(message):
     name = message.text
-    bot.send_message(message.from_user.id,
-                     'Теперь описание. Напиши вопрос, который отражает твою продуктивность по данной задаче.')
-    bot.register_next_step_handler(message, lambda message: register_task_description(message, name))
-
-
-def register_task_description(message, name):
-    description = message.text
-    register_task(bot, message, name, description)
+    register_task(bot, message, name, "description")
 
 
 def register_task(bot, message, name, description):
@@ -145,56 +149,72 @@ def register_task(bot, message, name, description):
                      reply_markup=funcs.get_keyboard_default())
 
 
+def start_printed_timer(bot, message, time_in_seconds, chat_id, task, tomato_id):
+    mes_id = bot.send_message(message.chat.id,
+                              "Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60,
+                                                               time_in_seconds % 60)).message_id
+    time_in_seconds -= 1
+    while time_in_seconds >= 0:
+        bot.edit_message_text("Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60, time_in_seconds % 60),
+                              message_id=mes_id, chat_id=chat_id)
+        time_in_seconds -= 1
+        try:
+            with open('flag.json', 'r') as file:
+                data = json.load(file)
+            if data[str(message.from_user.id)][task['name']] == 1:
+                data[str(message.from_user.id)][task['name']] = 0
+                with open('flag.json', 'w') as file:
+                    json.dump(data, file)
+                break
+            time.sleep(1)
+        except:
+            time.sleep(1)
+    print('stop')
+    bot.send_message(message.from_user.id, "Оцени эффективность.", reply_markup=funcs.get_mark())
+    bot.register_next_step_handler(message, lambda message: save_tomato(message, bot, tomato_id))
+
+
 def get_time_tomato(bot, message, task_id, task, chat_id):
     if message.text.lower() == 'стандартный томат':
+        user_id = str(message.from_user.id)
         current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-        funcs.start_printed_timer(bot, message, tomato_time * 60, chat_id)
-        bot.send_message(message.from_user.id, task['description'])
-        bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
-                                                                                  tomato_time))
-    else:
-        bot.send_message(message.from_user.id, 'Сколько минут длится томат?')
-        bot.register_next_step_handler(message,
-                                       lambda message: get_time_special_tomato(message, task_id, task, chat_id))
+        with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
+            data = json.load(file)
+        if data["tomatoes"] == {}:
+            tomato_id = "0"
+        else:
+            tomato_id = str(max(map(int, data["tomatoes"].keys())) + 1)
+        data["tomatoes"][tomato_id] = {'task_id': task_id, 'answer': None, 'ts': current_time, 'status': 0,
+                                                'time_tomato': tomato_time, 'mark': None}
+        with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
+            json.dump(data, file)                             
+        t = Thread(target = lambda msg: start_printed_timer(bot, msg, tomato_time * 60, chat_id, task, tomato_id), args = (message,))
+        t.start()
+
+def stop_tomato(message):
+    task_name = message.text 
+    try:
+        with open('flag.json', 'r') as file:
+            data_flags = json.load(file)
+    except:
+        data_flags = {}
+    if str(message.from_user.id) not in data_flags:
+        data_flags[str(message.from_user.id)] = {}
+    data_flags[str(message.from_user.id)][task_name] = 1
+    with open('flag.json', 'w') as file:
+        json.dump(data_flags, file)
 
 
-def start_personal_tomato(task, message, chat_id):
-    funcs.start_printed_timer(bot, message, 60, chat_id)
-
-
-def save_tomato(message, bot, task_id, time_start, status, time_tomato):
-    answer = message.text
+def save_tomato(message, bot, tomato_id):
+    status = message.text
     user_id = str(message.from_user.id)
     with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
         data = json.load(file)
-    if data["tomatoes"] == {}:
-        tomato_id = "0"
-    else:
-        tomato_id = str(max(map(int, data["tomatoes"].keys())) + 1)
-    data["tomatoes"][tomato_id] = {'task_id': task_id, 'answer': answer, 'ts': time_start, 'status': status,
-                                            'time_tomato': time_tomato}
-    task_name = data["tasks"][task_id]["name"]
+    data['tomatoes'][tomato_id]['mark'] = status
+    data['tomatoes'][tomato_id]['status'] = 1
     with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
-        json.dump(data, file)
-    assistant.users[str(message.from_user.id)].tasks[task_name].add_history(status, time_tomato, time_start, answer)
-    bot.send_message(message.from_user.id, "Не мне тебя судить, но я записал",
-                     reply_markup=funcs.get_keyboard_default())
-
-
-def get_status_tomato(message, bot, task_id, time_start, time_tomato):
-    status = message.text
-    bot.send_message(message.from_user.id, "Теперь напиши комментарий")
-    bot.register_next_step_handler(message,
-                                   lambda message: save_tomato(message, bot, task_id, time_start, status, time_tomato))
-
-
-def get_time_special_tomato(message, task_id, task, chat_id):
-    time_tomato = int(message.text)
-    current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-    funcs.start_printed_timer(bot, message, time_tomato * 60, chat_id)
-    bot.send_message(message.from_user.id, task['description'])
-    bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
-                                                                                    time_tomato))
+        json.dump(data, file) 
+    bot.send_message(message.from_user.id, f"Понял принял, оценка {status}", reply_markup=funcs.get_keyboard_default())
 
 
 @bot.message_handler(content_types=['text'])
@@ -203,6 +223,29 @@ def get_text_messages(message):
     register_id(str(message.from_user.id))
     if message.text.lower() == 'привет':
         bot.send_message(message.from_user.id, 'Привет!')
+    elif message.text.lower() in ['да', 'нет']:
+        bot.send_message(message.from_user.id, 'Понял :)', reply_markup=funcs.get_keyboard_default())
+    elif message.text.lower() == 'режим таймеров':
+        bot.send_message(message.from_user.id, 'Вы находитесь в режиме таймеров', reply_markup=funcs.get_keyboard_timers())
+    elif message.text.lower() == 'включить таймеры':
+        timers_enabled[str(message.from_user.id)] = 1
+        t = Thread(target = lambda message: check_timers(message), args=(message,))
+        t.start()
+        bot.send_message(message.from_user.id, 'Режим таймеров включен', reply_markup=funcs.get_keyboard_default())
+    elif message.text.lower() == 'выключить таймеры':
+        timers_enabled[str(message.from_user.id)] = 0
+        bot.send_message(message.from_user.id, 'Режим таймеров выключен', reply_markup=funcs.get_keyboard_default())
+    elif message.text.lower() == 'остановить томат':
+        active_tomatoes = funcs.load_active_tomatoes(message.from_user.id)
+        if active_tomatoes == []:
+            bot.send_message(message.from_user.id, 'Нет активных томатов', reply_markup=funcs.get_keyboard_default())
+        else:
+            task_ids = list(map(lambda x: x['task_id'], active_tomatoes))
+            tasks = funcs.load_tasks(message.from_user.id)
+            task_names = [tasks[task_id]['name'] for task_id in task_ids]
+            print(task_names)
+            bot.send_message(message.from_user.id, 'Выбери томат', reply_markup = funcs.get_personal_tasks(task_names))
+            bot.register_next_step_handler(message, stop_tomato)
     elif message.text.lower() == 'запустить томат':
         bot.send_message(message.from_user.id, 'Выбери задачу из списка:',
                          reply_markup=funcs.get_keyboard_tasks(funcs.load_tasks(message.from_user.id)))

@@ -1,26 +1,21 @@
 import time
 import telebot
+from datetime import datetime
+from datetime import time
 import json
-
-# filename = 'test_data.json'
-
-
-def start_printed_timer(bot, message, time_in_seconds, chat_id):
-    mes_id = bot.send_message(message.chat.id,
-                              "Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60,
-                                                               time_in_seconds % 60)).message_id
-    time_in_seconds -= 1
-    while time_in_seconds >= 0:
-        bot.edit_message_text("Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60, time_in_seconds % 60),
-                              message_id=mes_id, chat_id=chat_id)
-        time_in_seconds -= 1
-        time.sleep(1)
+import numpy as np
 
 
 def load_tasks(user_id):
     with open("data/" + str(user_id) + ".json" , "r", encoding="UTF-8") as file:
         data = json.load(file)
     return data["tasks"]
+
+def load_active_tomatoes(user_id):
+    with open("data/" + str(user_id) + ".json" , "r", encoding="UTF-8") as file:
+        data = json.load(file)
+    print(data["tomatoes"].values())
+    return list(filter(lambda x: x["status"] == 0, data["tomatoes"].values()))
 
 
 def get_keyboard_tasks(tasks, prefix=""):
@@ -37,6 +32,8 @@ def get_keyboard_default():
     keyboard.add(telebot.types.KeyboardButton(text="Запустить томат"))
     keyboard.add(telebot.types.KeyboardButton(text="Добавить задачу"))
     keyboard.add(telebot.types.KeyboardButton(text="Удалить задачу"))
+    keyboard.add(telebot.types.KeyboardButton(text="Остановить томат"))
+    keyboard.add(telebot.types.KeyboardButton(text="Режим таймеров"))
     return keyboard
 
 
@@ -50,7 +47,6 @@ def get_keyboard_personal():
 def get_keyboard_type_tomato():
     keyboard = telebot.types.ReplyKeyboardMarkup()
     keyboard.add(telebot.types.KeyboardButton(text="Стандартный томат"))
-    keyboard.add(telebot.types.KeyboardButton(text="Особый томат"))
     return keyboard
 
 
@@ -98,3 +94,51 @@ def get_task_evaluation():
     keyboard.add(telebot.types.InlineKeyboardButton(text='4', callback_data=4))
     keyboard.add(telebot.types.InlineKeyboardButton(text='5', callback_data=5))
     return keyboard
+
+def get_mark():
+    keyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    keyboard.add(telebot.types.KeyboardButton(text="1"))
+    keyboard.add(telebot.types.KeyboardButton(text="2"))
+    keyboard.add(telebot.types.KeyboardButton(text="3"))
+    keyboard.add(telebot.types.KeyboardButton(text="4"))
+    keyboard.add(telebot.types.KeyboardButton(text="5"))
+    return keyboard
+
+def get_keyboard_timers():
+    keyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    keyboard.add(telebot.types.KeyboardButton(text="Включить таймеры"))
+    keyboard.add(telebot.types.KeyboardButton(text="Выключить таймеры"))
+    return keyboard
+
+def yes_no():
+    keyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    keyboard.add(telebot.types.KeyboardButton(text="Да"))
+    keyboard.add(telebot.types.KeyboardButton(text="Нет"))
+    return keyboard
+
+def start_printed_timer(bot, message, time_in_seconds, chat_id):
+    mes_id = bot.send_message(message.chat.id,
+                              "Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60,
+                                                               time_in_seconds % 60)).message_id
+    time_in_seconds -= 1
+    while time_in_seconds >= 0:
+        bot.edit_message_text("Отсчет времени: {0}:{1}".format(time_in_seconds // 60 % 60, time_in_seconds % 60),
+                              message_id=mes_id, chat_id=chat_id)
+        time_in_seconds -= 1
+        time.sleep(1)
+
+def get_random_timers(time_start, time_end, n_timers, interval = 30 * 60):
+    timers = []
+    upper = time_end.hour * 60 + time_end.minute
+    lower = time_start.hour * 60 + time_start.minute
+    if upper - lower < interval:
+        timer = np.random.randint(lower, upper)
+        return [time(timer // 60, timer % 60, 0)]
+    current_upper = lower + interval
+    current_lower = lower
+    while current_upper < upper and len(timers) < n_timers:
+        timer = np.random.randint(current_lower, current_upper)
+        timers.append(time(timer // 60, timer % 60, 0))
+        current_lower = timer + interval
+        current_upper = current_lower + interval
+    return timers
