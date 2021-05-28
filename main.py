@@ -13,7 +13,7 @@ import recommends_control
 import config.config as conf
 from threading import Thread
 
-tomato_time = 1
+tomato_time = 25
 tomato_processes = {}
 
 assistant = Assistant()
@@ -158,7 +158,7 @@ def start_printed_timer(bot, message, time_in_seconds, chat_id, task, tomato_id)
             time.sleep(1)
     print('stop')
     bot.send_message(message.from_user.id, "Оцени эффективность.", reply_markup=funcs.get_mark())
-    bot.register_next_step_handler(message, lambda message: save_tomato1(message, bot, tomato_id))
+    bot.register_next_step_handler(message, lambda message: save_tomato(message, bot, tomato_id))
 
 
 def get_time_tomato(bot, message, task_id, task, chat_id):
@@ -192,10 +192,7 @@ def stop_tomato(message):
         json.dump(data_flags, file)
 
 
-def start_personal_tomato(task, message, chat_id):
-    start_printed_timer(bot, message, 60, chat_id)
-
-def save_tomato1(message, bot, tomato_id):
+def save_tomato(message, bot, tomato_id):
     status = message.text
     user_id = str(message.from_user.id)
     with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
@@ -205,40 +202,6 @@ def save_tomato1(message, bot, tomato_id):
     with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
         json.dump(data, file) 
     bot.send_message(message.from_user.id, f"Понял принял, оценка {status}", reply_markup=funcs.get_keyboard_default())
-
-def save_tomato(message, bot, task_id, time_start, status, time_tomato):
-    answer = message.text
-    user_id = str(message.from_user.id)
-    with open(conf.DATA_PATH + '/' + user_id + '.json', "r", encoding="UTF-8") as file:
-        data = json.load(file)
-    if data["tomatoes"] == {}:
-        tomato_id = "0"
-    else:
-        tomato_id = str(max(map(int, data["tomatoes"].keys())) + 1)
-    data["tomatoes"][tomato_id] = {'task_id': task_id, 'answer': answer, 'ts': time_start, 'status': status,
-                                            'time_tomato': time_tomato}
-    task_name = data["tasks"][task_id]["name"]
-    with open(conf.DATA_PATH + '/' + user_id + '.json', "w", encoding="UTF-8") as file:
-        json.dump(data, file)
-    assistant.users[str(message.from_user.id)].tasks[task_name].add_history(status, time_tomato, time_start, answer)
-    bot.send_message(message.from_user.id, "Не мне тебя судить, но я записал",
-                     reply_markup=funcs.get_keyboard_default())
-
-
-def get_status_tomato(message, bot, task_id, time_start, time_tomato):
-    status = message.text
-    bot.send_message(message.from_user.id, "Теперь напиши комментарий")
-    bot.register_next_step_handler(message,
-                                   lambda message: save_tomato(message, bot, task_id, time_start, status, time_tomato))
-
-
-def get_time_special_tomato(message, task_id, task, chat_id):
-    time_tomato = int(message.text)
-    current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
-    start_printed_timer(bot, message, time_tomato * 60, chat_id)
-    bot.send_message(message.from_user.id, task['description'])
-    bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
-                                                                                    time_tomato))
 
 
 @bot.message_handler(content_types=['text'])
