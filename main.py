@@ -156,9 +156,9 @@ def start_printed_timer(bot, message, time_in_seconds, chat_id):
             time.sleep(1)
         except:
             time.sleep(1)
-    bot.send_message(message.from_user.id, "Оцени эффективность.")
-    # bot.register_next_step_handler(message, lambda message: get_status_tomato(message, bot, task_id, current_time,
-    #                                                                                   tomato_time))
+    print('stop')
+    bot.send_message(message.from_user.id, "Оцени эффективность.", reply_markup=funcs.get_mark())
+    bot.register_next_step_handler(message, lambda message: save_tomato1(message, bot))
 
 
 def get_time_tomato(bot, message, task_id, task, chat_id):
@@ -166,16 +166,14 @@ def get_time_tomato(bot, message, task_id, task, chat_id):
         current_time = (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
         t = Thread(target = lambda msg: start_printed_timer(bot, msg, tomato_time * 60, chat_id), args = (message,))
         t.start()
-        
-    else:
-        bot.send_message(message.from_user.id, 'Сколько минут длится томат?')
-        bot.register_next_step_handler(message,
-                                       lambda message: get_time_special_tomato(message, task_id, task, chat_id))
 
 
 def start_personal_tomato(task, message, chat_id):
     start_printed_timer(bot, message, 60, chat_id)
 
+def save_tomato1(message, bot):
+    status = message.text
+    bot.send_message(message.from_user.id, f"Понял принял, оценка {status}", reply_markup=funcs.get_keyboard_default())
 
 def save_tomato(message, bot, task_id, time_start, status, time_tomato):
     answer = message.text
